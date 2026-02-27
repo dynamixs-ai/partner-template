@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- =========================================================
+         STEP 1: Change these coordinates to match your project
+         ========================================================= -->
+    <groupId>com.acme</groupId>
+    <artifactId>acme-workflow</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+    <name>ACME Custom Workflow Build</name>
+
+    <properties>
+        <java.source>17</java.source>
+        <java.target>17</java.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- =========================================================
+             STEP 2: Set the Dynamixs.AI platform version you target.
+             Ask your Dynamixs.AI partner contact for the current version.
+             ========================================================= -->
+        <ai.dynamixs.version>1.0.0-SNAPSHOT</ai.dynamixs.version>
+
+        <!-- Jakarta EE -->
+        <jakarta.version>10.0.0</jakarta.version>
+        <microprofile.version>6.0</microprofile.version>
+
+        <!-- The final WAR name - this will be the context root on Wildfly -->
+        <custom.applicationname>acme-workflow</custom.applicationname>
+    </properties>
+
+    <!-- =========================================================
+         Repositories
+         - Imixs SNAPSHOT artifacts are on Sonatype (public)
+         - Dynamixs.AI artifacts are on GitHub Packages (partner access required)
+         ========================================================= -->
+    <repositories>
+        <repository>
+            <id>oss-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </repository>
+        <repository>
+            <id>github-dynamixs</id>
+            <name>Dynamixs.AI GitHub Packages</name>
+            <url>https://maven.pkg.github.com/dynamixs-ai/dynamixs-platform-repo</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
+
+    <dependencies>
+
+        <!-- =========================================================
+             Dynamixs.AI Platform Core
+             Contains all platform services, CDI beans, REST endpoints,
+             AI integration and workflow engine extensions.
+             Transitively pulls in imixs-workflow and imixs-office-workflow.
+             ========================================================= -->
+        <dependency>
+            <groupId>ai.dynamixs</groupId>
+            <artifactId>dynamixs-platform-core</artifactId>
+            <version>${ai.dynamixs.version}</version>
+        </dependency>
+
+        <!-- =========================================================
+             Dynamixs.AI Platform UI - WAR Overlay Base
+             This is the base web application. Your files in
+             src/main/webapp/ will override files from this WAR.
+             ========================================================= -->
+        <dependency>
+            <groupId>ai.dynamixs</groupId>
+            <artifactId>dynamixs-platform-ui</artifactId>
+            <version>${ai.dynamixs.version}</version>
+            <type>war</type>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- =========================================================
+             STEP 3: Add your customer-specific dependencies here.
+             Examples: ERP connectors, custom REST clients, etc.
+             This code is owned by your customer - not by Dynamixs.AI.
+             ========================================================= -->
+        <!--
+        <dependency>
+            <groupId>com.acme</groupId>
+            <artifactId>sap-connector</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        -->
+
+        <!-- Jakarta EE API - provided by Wildfly at runtime -->
+        <dependency>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
+            <version>${jakarta.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Microprofile - provided by Wildfly at runtime -->
+        <dependency>
+            <groupId>org.eclipse.microprofile</groupId>
+            <artifactId>microprofile</artifactId>
+            <version>${microprofile.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <finalName>${custom.applicationname}</finalName>
+
+        <plugins>
+            <!-- Use JDK settings for compiling -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${java.source}</source>
+                    <target>${java.target}</target>
+                </configuration>
+            </plugin>
+
+            <!-- WAR Overlay: dynamixs-platform-ui is the base layer.
+                 Files in src/main/webapp/ take precedence and override
+                 anything from the base WAR. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <workDirectory>target/overlay-war-folder</workDirectory>
+                    <overlays>
+                        <overlay>
+                            <groupId>ai.dynamixs</groupId>
+                            <artifactId>dynamixs-platform-ui</artifactId>
+                            <excludes>
+                                <!-- JARs come from platform-core dependency, not from the WAR -->
+                                <exclude>WEB-INF/lib/*.jar</exclude>
+                            </excludes>
+                        </overlay>
+                    </overlays>
+                </configuration>
+            </plugin>
+
+            <!-- Hot deployment to local Wildfly Docker instance -->
+            <plugin>
+                <groupId>org.imixs.maven</groupId>
+                <artifactId>manik-hotdeploy-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <executions>
+                    <execution>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <autodeployments>
+                        <deployment>
+                            <source>target/*.{war,ear,jar}</source>
+                            <target>docker/deployments/</target>
+                            <unpack>true</unpack>
+                        </deployment>
+                    </autodeployments>
+                    <hotdeployments>
+                        <deployment>
+                            <source>src/main/webapp</source>
+                            <target>docker/deployments/${custom.applicationname}.war</target>
+                        </deployment>
+                    </hotdeployments>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
