@@ -1,0 +1,157 @@
+services:
+  #######################
+  # PostgreSQL
+  #######################
+  db:
+    image: postgres:9.6.1
+    environment:
+      POSTGRES_PASSWORD: adminadmin
+      POSTGRES_DB: office
+    volumes:
+      - dbdata-hai:/var/lib/postgresql/data
+
+  #######################
+  # Dynamixs AI
+  #######################
+  app:
+    image: ghcr.io/dynamixs-ai/ai-platform:latest
+    depends_on:
+      - db
+    environment:
+      JAVA_OPTS: "-Dnashorn.args=--no-deprecation-warning"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "adminadmin"
+      POSTGRES_CONNECTION: "jdbc:postgresql://db/office"
+      TZ: "Europe/Berlin"
+      LANG: "en_US.UTF-8"
+      MAILGATEWAY: "localhost"
+      ASYNCEVENT_PROCESSOR_ENABLED: "true"
+      ASYNCEVENT_PROCESSOR_INITIALDELAY: "30000"
+      # Metrics
+      METRICS_ENABLED: "true"
+      # OCR
+      OCR_SERVICE_ENDPOINT: "http://tika:9998/tika"
+      # MODEL | AUTO
+      OCR_SERVICE_MODE: "AUTO"
+      #OCR_STRATEGY: "NO_OCR, OCR_ONLY, OCR_AND_TEXT_EXTRACTION, AUTO (default)"
+      OCR_STRATEGY: "NO_OCR"
+      OCR_FILEPATTERN: "(PDF|pdf)$"
+      OCR_MAXPDFPAGES: 10
+
+      # Collabora integration
+      WOPI_PUBLIC_ENDPOINT: "http://localhost:9980"
+      WOPI_DISCOVERY_ENDPOINT: "http://collabora:9980/hosting/discovery"
+      WOPI_HOST_ENDPOINT: "http://app:8080/api/wopi/"
+      COLLABORA_CONVERTER_URL: "http://collabora:9980/lool/convert-to/"
+
+      # Imixs-AI
+      # Optional configured via imixs.properties
+      LLM_SERVICE_ENDPOINT: ${LLM_API_ENDPOINT}
+      LLM_SERVICE_ENDPOINT_APIKEY: ${LLM_API_KEY}
+
+      # Cassandra Embeddings
+      EMBEDDINGS_CLUSTER_CONTACTPOINTS: "cassandra"
+      EMBEDDINGS_CLUSTER_KEYSPACE: "embeddings"
+
+    ports:
+      - "8080:8080"
+      - "9990:9990"
+      - "8787:8787"
+    volumes:
+      - ./deployments:/opt/jboss/wildfly/standalone/deployments/
+      - ./import_examples:/opt/jboss/import_examples/
+
+    # Mapping the host ip to the container
+    # This setting is used for local testing only
+    # Wildfly can access the keycloak server via the external host address
+    # extra_hosts:
+    #   - "keycloak.imixs.local:host-gateway"
+
+  #######################
+  # Tika OCR Service
+  #######################
+  tika:
+    image: apache/tika:3.2.0.0-full
+    environment:
+      TZ: "Europe/Berlin"
+    ports:
+      - "9998:9998"
+
+  #######################
+  # Cassandra
+  #######################
+  cassandra:
+    image: cassandra:5.0.4
+    container_name: cassandra
+    mem_limit: 2G # Mindestens 2 GB RAM für Cassandra 5.x
+    mem_reservation: 1G # Reserviert 1 GB
+    environment:
+      - TZ="Europe/Berlin"
+      - JVM_OPTS=-Xms1G -Xmx1G # Heap auf 1 GB begrenzen
+      - CASSANDRA_CLUSTER_NAME=dynamixsAiCluster
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_RACK=rack1
+    ports:
+      - "9042:9042" # CQL-Port
+      - "7000:7000" # Inter-Node-Kommunikation
+      - "7001:7001" # TLS-fähige Inter-Node-Kommunikation
+      - "7199:7199" # JMX-Port
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+
+  #######################
+  # collabora Office Online
+  #######################
+  collabora:
+    image: collabora/code:25.04.6.2.1
+    ports:
+      - "9980:9980"
+    environment:
+      - username=admin
+      - password=adminadmin
+      - extra_params=--o:ssl.enable=false
+      - aliasgroup1=http://app:8080
+    # volumes:
+    #   - ./configuration/collabora/fonts:/usr/share/fonts/truetype/more/
+    #   - ./configuration/collabora/fonts:/opt/cool/systemplate/usr/share/fonts/truetype/more/
+
+  #######################
+  # Imixs Admin Client
+  #######################
+  imixsadmin:
+    image: imixs/imixs-admin
+    ports:
+      - "8888:8080"
+
+  #######################
+  # Monitoring - Prometeus
+  #######################
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configuration/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheusdata:/prometheus/
+
+  #######################
+  # Monitoring - Grafana
+  #######################
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin # set default password
+    volumes:
+      - grafana-storage:/var/lib/grafana # data storage
+    #networks:
+    #  - monitoring
+
+volumes:
+  dbdata-hai:
+  dbkeycloak:
+  cassandra_data:
+  prometheusdata:
+  grafana-storage:
