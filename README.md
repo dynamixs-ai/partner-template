@@ -16,7 +16,10 @@ Docker Compose setup. No build step is required. This approach is ideal for:
 - Standard deployments without UI customizations
 - Projects where customer-specific logic lives in external services (e.g. ERP connectors via REST)
 
-All you need is Docker, a `docker-compose.yml`, and an LLM endpoint configuration file.
+All you need is Docker, a `docker-compose.yml`, and an LLM endpoint configuration file. You can find in the directory of this project:
+
+- `docker/docker-compose.yaml` – Standard deployment
+- `docker/docker-compose-dev.yaml` – Developer deployment for custom builds
 
 ### Option B – Custom Build (WAR Overlay)
 
@@ -127,6 +130,40 @@ docker compose up -d
 ```
 
 The application will be available at `http://localhost:8080`.
+
+---
+
+## Setup your Application
+
+After the stack is up and running, open your browser at `http://localhost:8080` and log in
+with the default admin account (`admin` / `adminadmin`).
+
+You need to complete four steps to get your first workflow running:
+
+### 1. Upload a BPMN Workflow Model
+
+Go to **Administration → Models** and upload a BPMN file. Ready-to-use templates are
+available in our [BPMN library](https://github.com/dynamixs-ai/bpmn-library).
+
+![Upload a BPMN model](docs/images/setup-01.png)
+
+### 2. Create a Process
+
+Go to **Administration → Processes** and create a new process.
+
+![Create a new process](docs/images/setup-02.png)
+
+### 3. Assign the Workflow Model
+
+Assign the uploaded BPMN model to your new process.
+
+![Assign the workflow model](docs/images/setup-03.png)
+
+### 4. Start the Workflow
+
+The new process now appears on the home screen. Click on it to start the corresponding workflow.
+
+![Start the workflow](docs/images/setup-04.png)
 
 ---
 
