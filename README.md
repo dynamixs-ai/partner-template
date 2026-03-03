@@ -30,8 +30,8 @@ Docker Compose setup. No build step is required. This approach is ideal for:
 
 All you need is Docker, a `docker-compose.yml`, and an LLM endpoint configuration file. You can find in the directory of this project:
 
-- `docker/docker-compose.yaml` – Standard deployment
-- `docker/docker-compose-dev.yaml` – Developer deployment for custom builds
+- 📦 [`docker/docker-compose.yaml`](./docker/docker-compose.yaml) – Standard deployment
+- 📦 [`docker/docker-compose-dev.yaml`](./docker/docker-compose-dev.yaml) – Developer deployment for custom builds
 
 ### Option B – Custom Build (WAR Overlay)
 
