@@ -1,7 +1,12 @@
 # Dynamixs.AI – Partner Integration Guide
 
-This guide explains how to integrate the Dynamixs.AI platform into your customer projects.
-There are two fundamentally different approaches — choose the one that fits your needs.
+The Dynamixs.AI – Partner Template contains artifacts and examples that help you to get started with you custom project.
+
+- The folder `/bpmn` contains BPMN Models examples and basic templates.
+- The folder `/docker` contains docker templates
+- The folder `/src` contains a scaffold for a custom web application
+
+To integrate the Dynamixs.AI platform into a customer project, there are two fundamentally different approaches — choose the one that fits your needs.
 
 ---
 
