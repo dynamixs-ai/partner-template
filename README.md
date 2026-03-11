@@ -140,7 +140,25 @@ LLM_API_ENDPOINT=https://my.llama.cpp.foo.com/
 LLM_API_KEY=your-api-key-here
 ```
 
-### 3. Start the stack
+### 3. Docker Image
+
+All ai-platform Docker images are available via GitHub Container Registry (GHCR).
+To Pull the Docker Image, first, authenticate with GHCR using your PAT:
+
+**Step 1 – Create a Personal Access Token**
+
+- Go to GitHub → Profile Settings → Developer settings → Personal access tokens → Tokens (classic)
+- Click "Generate new token (classic)"
+- Set a meaningful note, e.g. dynamixs-maven-access
+- Select the following scope:
+  read:packages
+- Click "Generate token" and copy it immediately – you won't see it again
+
+**Step 2 - login with docker**
+
+    echo YOUR_PERSONAL_ACCESS_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+### 4. Start the stack
 
 ```bash
 docker compose up -d
