@@ -154,9 +154,53 @@ To Pull the Docker Image, first, authenticate with GHCR using your PAT:
   read:packages
 - Click "Generate token" and copy it immediately – you won't see it again
 
-**Step 2 - login with docker**
+**Step 2a - login with docker**
+
+Login you docker to the registry:
 
     echo YOUR_PERSONAL_ACCESS_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+**Setp 1b - login with kubernetes**
+
+For **Kubernetes Cluster** create a so called Image Pull Secret:
+
+```
+$ kubectl create secret docker-registry ghcr-pull-secret \
+  --docker-server=ghcr.io \
+  --docker-username=YOUR_GITHUB_USERNAME \
+  --docker-password=YOUR_PERSONAL_ACCESS_TOKEN \
+  --docker-email=YOUR-EMAIL \
+  -n NAMESPACE
+```
+
+And set the secret into you deployment config:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dynamixs-ai
+  labels:
+    app: dynamixs-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dynamixs-ai
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: dynamixs-ai
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: dynamixs-ai
+          image: ghcr.io/dynamixs-ai/ai-platform:1.0.1-SNAPSHOT
+......
+```
 
 ### 4. Start the stack
 
